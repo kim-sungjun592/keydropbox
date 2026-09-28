@@ -1,38 +1,835 @@
-.App {
-  text-align: center;
+/* ===== App.css (수정된 버전) =====
+ * 역할: 전체 애플리케이션의 스타일링
+ * 디자인: M-TEL 호텔 키오스크 UI
+ * 컬러 스킴:
+ * - Primary: #2c6e7f (다크 테일 - 버튼, 헤더)
+ * - Secondary: #f07030 (오렌지 - Enter 버튼)
+ * - Background: #f0f2f5 (라이트 그레이)
+ * 수정 사항: RoomDetail의 평면도 제거, 객실 사진만 표시
+ */
+
+/* ===== 전역 스타일 ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* ===== App 컨테이너 ===== */
+.app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f2f5 0%, #e8eaed 100%);
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* ===== 기본 화면 컨테이너 ===== */
+.screen {
+  width: 100%;
+  max-width: 1400px;
+  height: 100%;
+  max-height: 900px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== MainScreen 스타일 ===== */
+.main-screen {
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+}
+
+.main-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  width: 100%;
+  height: 100%;
+  padding: 60px 40px;
+  gap: 50px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.header h1 {
+  font-size: 56px;
+  color: #2c6e7f;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+.header .subtitle {
+  font-size: 16px;
+  color: #666;
+  font-weight: 300;
+  letter-spacing: 1px;
+}
+
+/* 선택 버튼 영역 */
+.choice-buttons {
+  display: flex;
+  gap: 60px;
+  justify-content: center;
+  width: 100%;
+}
+
+.choice-btn {
+  width: 200px;
+  height: 220px;
+  padding: 30px 20px;
+  background: #2c6e7f;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  transition: all 0.3s ease;
+  color: white;
+  font-size: 14px;
+  box-shadow: 0 4px 15px rgba(44, 110, 127, 0.2);
+}
+
+.choice-btn:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 25px rgba(44, 110, 127, 0.3);
+  background: #1f4e5f;
+}
+
+.choice-btn:active {
+  transform: translateY(-4px);
+}
+
+.btn-icon {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.btn-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.btn-subtitle {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.info-text {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.info-text .small {
+  font-size: 12px;
+  color: #999;
+  display: block;
+  margin-top: 4px;
+}
+
+/* ===== PreBooking 스타일 ===== */
+.prebooking-screen {
+  background: #f9fafb;
+}
+
+.prebooking-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  gap: 30px;
+}
+
+.prebooking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e8eaed;
+}
+
+.prebooking-header h2 {
+  color: #2c6e7f;
+  font-size: 32px;
+}
+
+.back-btn {
+  color: #2c6e7f;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  background: #f0f2f5;
+  border: 1px solid #2c6e7f;
+}
+
+.back-btn:hover {
+  background: #2c6e7f;
   color: white;
 }
 
-.App-link {
-  color: #61dafb;
+/* 입력 섹션 */
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.booking-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 16px;
+  font-size: 18px;
+  border: 2px solid #2c6e7f;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.booking-input:focus {
+  border-color: #f07030;
+  box-shadow: 0 0 0 3px rgba(240, 112, 48, 0.1);
+}
+
+.booking-input:disabled {
+  background: #f0f2f5;
+  color: #999;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  font-weight: 500;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
   }
-  to {
-    transform: rotate(360deg);
+  25% {
+    transform: translateX(-5px);
   }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* 숫자패드 */
+.number-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 360px;
+  margin: 20px 0;
+}
+
+.pad-row {
+  display: contents;
+}
+
+.pad-btn {
+  padding: 18px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #f0f2f5;
+  color: #333;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.pad-btn:hover:not(:disabled) {
+  background: #e8eaed;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.pad-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pad-btn.clear {
+  background: #f0f2f5;
+  color: #666;
+}
+
+.pad-btn.enter {
+  background: #f07030;
+  color: white;
+  font-weight: 700;
+  grid-column: 3;
+}
+
+.pad-btn.enter:hover:not(:disabled) {
+  background: #e85a1f;
+}
+
+.pad-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== RoomSelection 스타일 ===== */
+.room-selection-screen {
+  background: #f9fafb;
+}
+
+.room-selection-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.room-selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e8eaed;
+  margin-bottom: 10px;
+}
+
+.room-selection-header h2 {
+  color: #2c6e7f;
+  font-size: 32px;
+}
+
+.selection-info {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin: 10px 0 20px 0;
+}
+
+/* 가격별 그룹화 제거 */
+.room-selection-container {
+  display: none;
+}
+
+.price-group {
+  display: none;
+}
+
+.price-header {
+  display: none;
+}
+
+.rooms-grid-container {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* 객실 선택 화면 - 3열 그리드 */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* 객실 카드 - 선택 화면용 이미지 */
+.room-layout-image {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  background: #f9fafb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #e8eaed;
+  overflow: hidden;
+  position: relative;
+}
+
+.room-layout-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.room-layout-image svg {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  color: #2c6e7f;
+}
+
+/* 객실 카드 */
+.room-card {
+  background: white;
+  border: 2px solid #e8eaed;
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.room-card:hover:not(.unavailable) {
+  border-color: #2c6e7f;
+  box-shadow: 0 6px 20px rgba(44, 110, 127, 0.15);
+  transform: translateY(-6px);
+}
+
+.room-card.unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.room-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c6e7f;
+}
+
+.room-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.availability {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.availability.available {
+  background: #d4edda;
+  color: #155724;
+}
+
+.availability.unavailable {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.selection-footer {
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e8eaed;
+}
+
+/* ===== RoomDetail 스타일 ===== */
+.room-detail-screen {
+  background: #f9fafb;
+  padding: 0;
+}
+
+.room-detail-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  gap: 30px;
+  overflow-y: auto;
+}
+
+.room-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e8eaed;
+}
+
+.room-detail-header h2 {
+  color: #2c6e7f;
+  font-size: 32px;
+}
+
+.detail-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  flex: 1;
+}
+
+/* ===== 좌측: 객실 사진 ===== */
+.detail-left {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  justify-content: flex-start;
+}
+
+/* 객실 사진 메인 컨테이너 (평면도 제거되고 사진만 표시) */
+.photo-container-main {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-container-main h3 {
+  color: #2c6e7f;
+  font-size: 18px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+/* 사진을 크게 표시 */
+.room-photo-main {
+  width: 100%;
+  flex: 1;
+  background: #f9fafb;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e8eaed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.room-photo-main img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.room-photo-main.photo-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f2f5;
+  color: #999;
+  font-size: 14px;
+}
+
+.room-photo-main.photo-error::after {
+  content: "이미지를 로드할 수 없습니다";
+}
+
+/* ===== 우측: 상세정보 ===== */
+.detail-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: 100%;
+  padding-right: 12px;
+}
+
+.detail-right::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-right::-webkit-scrollbar-thumb {
+  background: #2c6e7f;
+  border-radius: 3px;
+}
+
+/* 정보 그룹 */
+.info-group {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.info-group.large-info {
+  padding: 20px;
+  background: linear-gradient(135deg, #2c6e7f 0%, #1f4e5f 100%);
+}
+
+.info-group label {
+  display: block;
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.room-number-large {
+  font-size: 48px;
+  color: white;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1;
+}
+
+.info-group.large-info .status {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.room-price-large {
+  font-size: 28px;
+  color: #f07030;
+  font-weight: 700;
+}
+
+.price-unit {
+  font-size: 16px;
+  color: #999;
+  font-weight: 500;
+}
+
+.room-size {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.status {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status.available {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status.unavailable {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.description {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.amenities {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.amenities li {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  padding-left: 4px;
+}
+
+.detail-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 12px 0;
+  border-top: 1px solid #e8eaed;
+}
+
+.btn-continue {
+  flex: 1;
+  padding: 16px 24px;
+  background: #2c6e7f;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(44, 110, 127, 0.2);
+}
+
+.btn-continue:hover:not(:disabled) {
+  background: #1f4e5f;
+  box-shadow: 0 4px 12px rgba(44, 110, 127, 0.3);
+  transform: translateY(-2px);
+}
+
+.btn-continue:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== 반응형 디자인 ===== */
+@media (max-width: 1200px) {
+  .rooms-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .room-card {
+    padding: 16px;
+  }
+
+  .room-number {
+    font-size: 28px;
+  }
+
+  .detail-main {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .detail-left {
+    order: 2;
+  }
+
+  .detail-right {
+    order: 1;
+  }
+}
+
+@media (max-width: 1024px) {
+  .rooms-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+
+  .room-card {
+    padding: 16px;
+  }
+
+  .detail-main {
+    grid-template-columns: 1fr;
+  }
+
+  .choice-buttons {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .choice-btn {
+    width: 100%;
+  }
+
+  .amenities {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .screen {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+
+  .main-content {
+    padding: 40px 20px;
+    gap: 30px;
+  }
+
+  .header h1 {
+    font-size: 36px;
+  }
+
+  .prebooking-content,
+  .room-selection-content,
+  .room-detail-content {
+    padding: 20px;
+  }
+
+  .number-pad {
+    max-width: 100%;
+  }
+
+  .rooms-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .room-card {
+    padding: 12px;
+  }
+
+  .room-number {
+    font-size: 22px;
+  }
+
+  .room-layout-image {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+/* ===== 스크롤바 스타일링 ===== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2c6e7f;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1f4e5f;
 }
