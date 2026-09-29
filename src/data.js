@@ -1,32 +1,43 @@
-// ===== data.js =====
-// 역할: 모텔의 모든 방 정보와 예약 데이터를 저장하는 데이터 파일
-// 이미지 필드:
-// - thumbnailLayout: 객실 선택 화면에서 사용할 소형 평면도 (카드에 표시)
-// - detailLayout: 객실 상세정보 화면에서 사용할 대형 평면도
-// - roomPhoto: 객실 실제 사진 (선택사항, 나중에 추가 가능)
+// ===== src/data.js =====
+// 역할: 객실 정보 및 이미지 데이터 관리
 
-// 객실 정보 데이터
+// 객실 기본 정보
 export const roomsData = [
   {
     id: 101,
     name: "101호",
     price: 80000,
     available: true,
-    description: "기본 더블룸 - 침대 1개, 침구류 완비",
-    // 이미지 경로 - public/images 폴더에 이미지를 배치하면 자동으로 로드됨
-    thumbnailLayout: "/images/layouts/room-101-thumbnail.png", // 객실 선택 화면용 (소형)
-    detailLayout: "/images/layouts/room-101-detail.png", // 상세정보 화면용 (대형)
-    roomPhoto: "/images/photos/room-101-photo.jpg", // 객실 사진 (선택사항)
+    description: "기본 더블룸 - 침대 2개, 침구류 완비",
+    thumbnailLayout: "/images/layouts/room-101-thumbnail.png",
+    roomPhoto: "/101.png",
+    floorPlan: "/101_floor.png",
+    amenities: [
+      "에어컨/난방",
+      "침구류 완비",
+      "욕실용품",
+      "WiFi 무료",
+      "TV",
+      "냉장고",
+    ],
   },
   {
     id: 202,
     name: "202호",
     price: 80000,
     available: true,
-    description: "기본 더블룸 - 침대 1개, 침구류 완비",
+    description: "기본 더블룸 - 침대 2개, 침구류 완비",
     thumbnailLayout: "/images/layouts/room-202-thumbnail.png",
-    detailLayout: "/images/layouts/room-202-detail.png",
-    roomPhoto: "/images/photos/room-202-photo.jpg",
+    roomPhoto: "/202.png",
+    floorPlan: "/202_floor.png",
+    amenities: [
+      "에어컨/난방",
+      "침구류 완비",
+      "욕실용품",
+      "WiFi 무료",
+      "TV",
+      "냉장고",
+    ],
   },
   {
     id: 303,
@@ -35,8 +46,17 @@ export const roomsData = [
     available: true,
     description: "프리미엄 더블룸 - 침대 1개, 욕조 완비",
     thumbnailLayout: "/images/layouts/room-303-thumbnail.png",
-    detailLayout: "/images/layouts/room-303-detail.png",
-    roomPhoto: "/images/photos/room-303-photo.jpg",
+    roomPhoto: "/303.png",
+    floorPlan: "/303_floor.png",
+    amenities: [
+      "에어컨/난방",
+      "침구류 완비",
+      "욕실용품",
+      "WiFi 무료",
+      "TV",
+      "냉장고",
+      "욕조",
+    ],
   },
   {
     id: 404,
@@ -45,18 +65,34 @@ export const roomsData = [
     available: true,
     description: "싱글룸 - 침대 1개, 기본 편의시설",
     thumbnailLayout: "/images/layouts/room-404-thumbnail.png",
-    detailLayout: "/images/layouts/room-404-detail.png",
-    roomPhoto: "/images/photos/room-404-photo.jpg",
+    roomPhoto: "/404.png",
+    floorPlan: "/404_floor.png",
+    amenities: [
+      "에어컨/난방",
+      "침구류 완비",
+      "욕실용품",
+      "WiFi 무료",
+      "TV",
+      "냉장고",
+    ],
   },
   {
     id: 505,
     name: "505호",
     price: 50000,
-    available: false, // 예약된 상태
+    available: false,
     description: "싱글룸 - 침대 1개, 기본 편의시설",
     thumbnailLayout: "/images/layouts/room-505-thumbnail.png",
-    detailLayout: "/images/layouts/room-505-detail.png",
-    roomPhoto: "/images/photos/room-505-photo.jpg",
+    roomPhoto: "/505.png",
+    floorPlan: "/505_floor.png",
+    amenities: [
+      "에어컨/난방",
+      "침구류 완비",
+      "욕실용품",
+      "WiFi 무료",
+      "TV",
+      "냉장고",
+    ],
   },
   {
     id: 606,
@@ -65,16 +101,33 @@ export const roomsData = [
     available: true,
     description: "싱글룸 - 침대 1개, 기본 편의시설",
     thumbnailLayout: "/images/layouts/room-606-thumbnail.png",
-    detailLayout: "/images/layouts/room-606-detail.png",
-    roomPhoto: "/images/photos/room-606-photo.jpg",
+    roomPhoto: "/606.png",
+    floorPlan: "/606_floor.png",
+    amenities: [
+      "에어컨/난방",
+      "침구류 완비",
+      "욕실용품",
+      "WiFi 무료",
+      "TV",
+      "냉장고",
+    ],
   },
 ];
 
-// 사전예약 정보 (예약번호: 객실번호)
+// 사전예약 정보
 export const preBookings = {
   PB001: 101,
   PB002: 202,
   PB003: 303,
   PB004: 404,
   PB005: 606,
+};
+
+// 관리자 저장 이미지 (localStorage에서 로드됨)
+export const getAdminImages = () => {
+  return JSON.parse(localStorage.getItem("adminRoomImages") || "{}");
+};
+
+export const saveAdminImages = (images) => {
+  localStorage.setItem("adminRoomImages", JSON.stringify(images));
 };

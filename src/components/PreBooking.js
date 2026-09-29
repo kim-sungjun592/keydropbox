@@ -1,95 +1,93 @@
-// ===== PreBooking.js =====
-// 역할: 사전예약 고객의 예약번호 입력 화면
-// 기능:
-// - 번호패드로 예약번호 입력
-// - 입력한 예약번호 검증 (data.js의 preBookings 데이터와 비교)
-// - 잘못된 번호 시 에러 메시지 표시
-// - 올바른 번호 입력 시 해당 방의 상세정보로 이동
-// Props:
-// - onSuccess: 성공 시 호출 (room 정보 전달)
-// - onBackToMain: 메인화면으로 돌아가기
-
+// ===== src/components/PreBooking.js =====
 import React, { useState } from "react";
-import { preBookings, roomsData } from "../data";
+import { roomsData } from "../data";
 
 function PreBooking({ onSuccess, onBackToMain }) {
-  // ===== 상태 정의 =====
-  // inputValue: 사용자가 입력한 예약번호
   const [inputValue, setInputValue] = useState("");
-
-  // error: 에러 메시지 표시 여부
   const [error, setError] = useState("");
-
-  // isLoading: 검증 중 상태 (나중에 API 호출 시 사용)
   const [isLoading, setIsLoading] = useState(false);
 
-  // ===== 번호패드 버튼 클릭 처리 =====
   const handleNumberClick = (num) => {
     if (inputValue.length < 10) {
-      // 예약번호 최대 길이 제한
       setInputValue(inputValue + num);
-      setError(""); // 새로 입력하면 에러 메시지 제거
+      setError("");
     }
   };
 
-  // ===== Clear 버튼: 입력값 초기화 =====
   const handleClear = () => {
     setInputValue("");
     setError("");
   };
 
-  // ===== Enter 버튼: 예약번호 검증 및 처리 =====
-  const handleSubmit = () => {
-    // 입력값 검증
+  // 백엔드 API에 6자리 PIN 번호 검증 요청 (5001번 포트)
+  const handleSubmit = async () => {
     if (!inputValue.trim()) {
       setError("예약번호를 입력해주세요");
       return;
     }
 
     setIsLoading(true);
+    setError("");
 
-    // 실제로는 여기서 백엔드 API 호출
-    // 지금은 로컬 데이터에서 조회
-    setTimeout(() => {
-      // preBookings에서 입력한 예약번호 조회
-      const roomId = preBookings[inputValue.toUpperCase()];
+    try {
+      const response = await fetch(
+        `http://localhost:5001/api/reservation/${inputValue.trim()}`,
+      );
+      const data = await response.json();
 
-      if (roomId) {
-        // 예약번호가 존재하면 해당 방 정보 찾기
-        const room = roomsData.find((r) => r.id === roomId);
-        if (room) {
-          setIsLoading(false);
-          // 성공 시 선택된 방 정보와 함께 다음 단계로 진행
-          onSuccess(room);
-        }
+      if (data.success && data.reservation) {
+        const roomId = data.reservation.roomId;
+
+        const matchedRoom = roomsData.find((r) => r.id === roomId) || {
+          id: roomId,
+          price: 80000,
+          available: false,
+          description: "사전 예약 객실",
+        };
+
+        setIsLoading(false);
+        onSuccess(matchedRoom);
       } else {
-        // 예약번호가 없으면 에러 메시지 표시
-        setError("예약번호를 다시 입력하세요");
+        setError(data.message || "올바르지 않은 예약번호입니다.");
         setInputValue("");
         setIsLoading(false);
       }
-    }, 500); // API 호출 시뮬레이션 딜레이
+    } catch (err) {
+      console.error("예약 조회 에러:", err);
+      setError("서버 통신에 실패했습니다. (node server.js 확인 필요)");
+      setIsLoading(false);
+    }
   };
 
-  // ===== Enter 키 입력 처리 =====
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       handleSubmit();
     }
   };
 
+  const handleBack = (e) => {
+    e.preventDefault();
+    if (typeof onBackToMain === "function") {
+      onBackToMain();
+    } else {
+      console.warn("onBackToMain prop이 없습니다.");
+    }
+  };
+
   return (
     <div className="screen prebooking-screen">
       <div className="prebooking-content">
-        {/* 헤더 */}
         <div className="prebooking-header">
-          <h2>예약번호 입력</h2>
-          <p className="back-btn" onClick={onBackToMain}>
+          <h2>예약번호 (PIN) 입력</h2>
+          <p
+            className="back-btn"
+            onClick={handleBack}
+            style={{ cursor: "pointer" }}
+          >
             ← 돌아가기
           </p>
         </div>
 
-        {/* 입력 영역 */}
         <div className="input-section">
           <input
             type="text"
@@ -97,13 +95,12 @@ function PreBooking({ onSuccess, onBackToMain }) {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value.toUpperCase())}
             onKeyPress={handleKeyPress}
-            placeholder="예약번호 입력"
+            placeholder="6자리 PIN 번호 입력"
             disabled={isLoading}
           />
           {error && <div className="error-message">{error}</div>}
         </div>
 
-        {/* 숫자패드 */}
         <div className="number-pad">
           <div className="pad-row">
             <button className="pad-btn" onClick={() => handleNumberClick("1")}>
@@ -155,9 +152,8 @@ function PreBooking({ onSuccess, onBackToMain }) {
           </div>
         </div>
 
-        {/* 문자 입력 가능 안내 */}
         <div className="info-text">
-          <p>예약번호는 영문자와 숫자를 포함합니다 (예: PB001)</p>
+          <p>발급받으신 6자리 PIN (예약번호)를 입력해 주세요.</p>
         </div>
       </div>
     </div>

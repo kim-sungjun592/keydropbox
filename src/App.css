@@ -535,9 +535,10 @@ body {
 
 .room-photo-main img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+  height: 100%; /* 또는 기존에 설정된 높이(예: 400px) 유지 */
+  object-fit: contain; /* 👈 핵심: 이미지가 잘리지 않고 전체가 쏙 들어가게 변경 */
+  border-radius: 8px;
+  background-color: #f8f9fa; /* (선택) 이미지가 상자보다 작을 때 남는 여백의 배경색 설정 */
 }
 
 .room-photo-main.photo-error {
