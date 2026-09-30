@@ -1,11 +1,20 @@
 // ===== src/components/RoomSelection.js =====
 import React from "react";
 
-function RoomSelection({ rooms, onSelectRoom, onBackToMain }) {
+function RoomSelection({ rooms, onSelectRoom, onBackToMain, isAdmin = false }) {
   const handleBack = (e) => {
     e.preventDefault();
     if (typeof onBackToMain === "function") {
       onBackToMain();
+    }
+  };
+
+  // 🔑 클릭 조건 처리 함수 추가
+  const handleRoomClick = (room) => {
+    if (isAdmin || room.available) {
+      onSelectRoom(room);
+    } else {
+      alert("현재 이용 중인 객실입니다.");
     }
   };
 
@@ -33,7 +42,7 @@ function RoomSelection({ rooms, onSelectRoom, onBackToMain }) {
               <div
                 key={room.id}
                 className={`room-card ${room.available ? "" : "unavailable"}`}
-                onClick={() => room.available && onSelectRoom(room)}
+                onClick={() => handleRoomClick(room)}
               >
                 <div className="room-number">{room.id}</div>
                 <div className="room-layout-image">

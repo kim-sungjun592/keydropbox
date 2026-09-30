@@ -27,7 +27,7 @@ function App() {
     return roomsData;
   });
 
-  // 💾 2. 용량 초과 에러(QuotaExceededError) 방지 예외 처리 적용 저장 함수
+  // 💾 2. 용량 초과 에러 방지 저장 함수
   const updateAndSaveRooms = (newRooms) => {
     setRooms(newRooms);
     try {
@@ -35,12 +35,12 @@ function App() {
     } catch (e) {
       console.error("Storage quota exceeded!", e);
       alert(
-        "브라우저 저장 용량이 초과되었습니다. 너무 많은 이미지를 등록하셨다면 기존 이미지를 삭제하거나 조정해 주세요.",
+        "브라우저 저장 용량이 초과되었습니다. 이미지를 추가하기 어렵다면 기존 이미지를 삭제해 주세요.",
       );
     }
   };
 
-  // 저장된 이용중 상태 복원
+  // 🔄 3. 저장된 객실 정보 및 이용중 상태 복원
   useEffect(() => {
     const savedOccupied = JSON.parse(
       localStorage.getItem("occupiedRooms") || "[]",
@@ -60,12 +60,20 @@ function App() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    const initialOrSaved =
-      JSON.parse(localStorage.getItem("roomsData")) || roomsData;
-    const updatedRooms = initialOrSaved.map((r) => ({
-      ...r,
-      available: !currentOccupied.includes(String(r.id)),
-    }));
+    const savedRoomsStr = localStorage.getItem("roomsData");
+    const initialOrSaved = savedRoomsStr
+      ? JSON.parse(savedRoomsStr)
+      : roomsData;
+
+    const updatedRooms = initialOrSaved.map((r) => {
+      const isOccupied = currentOccupied.includes(String(r.id));
+      const status = r.status || (isOccupied ? "occupied" : "available");
+      return {
+        ...r,
+        status: status,
+        available: status === "available",
+      };
+    });
 
     updateAndSaveRooms(updatedRooms);
 
@@ -74,7 +82,11 @@ function App() {
         (r) => String(r.id) === String(roomId),
       );
       if (targetRoom) {
-        setSelectedRoom({ ...targetRoom, available: false });
+        setSelectedRoom({
+          ...targetRoom,
+          available: false,
+          status: "occupied",
+        });
         setCurrentScreen("roomDetail");
         setInitialPaidSuccess(true);
       }
@@ -86,6 +98,37 @@ function App() {
     const updatedRooms = rooms.map((r) =>
       String(r.id) === String(roomId) ? { ...r, image: imageUrl } : r,
     );
+    updateAndSaveRooms(updatedRooms);
+  };
+
+  // 🛠️ 객실 상태 변경 (관리자용)
+  const handleUpdateRoomStatus = (roomId, newStatus) => {
+    const updatedRooms = rooms.map((r) => {
+      if (String(r.id) === String(roomId)) {
+        return {
+          ...r,
+          status: newStatus,
+          available: newStatus === "available",
+        };
+      }
+      return r;
+    });
+
+    const isAvailable = newStatus === "available";
+    const savedOccupied = JSON.parse(
+      localStorage.getItem("occupiedRooms") || "[]",
+    );
+    let updatedOccupied = [...savedOccupied];
+
+    if (!isAvailable) {
+      if (!updatedOccupied.includes(String(roomId))) {
+        updatedOccupied.push(String(roomId));
+      }
+    } else {
+      updatedOccupied = updatedOccupied.filter((id) => id !== String(roomId));
+    }
+    localStorage.setItem("occupiedRooms", JSON.stringify(updatedOccupied));
+
     updateAndSaveRooms(updatedRooms);
   };
 
@@ -105,7 +148,9 @@ function App() {
     localStorage.setItem("occupiedRooms", JSON.stringify(updated));
 
     const updatedRooms = rooms.map((r) =>
-      String(r.id) === String(roomId) ? { ...r, available: false } : r,
+      String(r.id) === String(roomId)
+        ? { ...r, available: false, status: "occupied" }
+        : r,
     );
     updateAndSaveRooms(updatedRooms);
   };
@@ -148,25 +193,30 @@ function App() {
       style={{
         position: "relative",
         minHeight: "100vh",
+        width: "100%",
+        overflowY: "auto", // 🟢 상단/하단 부드러운 스크롤 허용
+        overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
       }}
     >
-      {/* 🔑 중앙 상단 관리자 토글 바 */}
+      {/* 🔑 중앙 상단 관리자 토글 바 (스크롤 내려도 상단에 붙어있도록 sticky 적용) */}
       <div
         style={{
-          marginTop: "20px",
-          marginBottom: "10px",
+          position: "sticky",
+          top: "15px",
+          marginTop: "15px",
+          marginBottom: "15px",
           padding: "8px 20px",
           backgroundColor: "#ffffff",
           borderRadius: "30px",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+          boxShadow: "0 4px 15px rgba(0, 0, 0, 0.12)",
           border: "1px solid #e0e0e0",
           display: "inline-flex",
           alignItems: "center",
           gap: "12px",
-          zIndex: 100,
+          zIndex: 1000,
         }}
       >
         <span style={{ fontSize: "14px", color: "#333" }}>
@@ -212,6 +262,7 @@ function App() {
           rooms={rooms}
           onSelectRoom={handleSelectRoom}
           onBackToMain={handleBackToMain}
+          isAdmin={isAdmin}
         />
       )}
 
@@ -226,6 +277,7 @@ function App() {
           initialPaidSuccess={initialPaidSuccess}
           isAdmin={isAdmin}
           onUpdateRoomImage={handleUpdateRoomImage}
+          onUpdateRoomStatus={handleUpdateRoomStatus}
           onNavigateToStructure={() => setCurrentScreen("roomStructureEdit")}
         />
       )}

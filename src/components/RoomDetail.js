@@ -1,46 +1,5 @@
 // ===== src/components/RoomDetail.js =====
-import React, { useState } from "react";
-
-// 🖼️ 이미지 압축 유틸리티 함수 (최대 800px, JPEG Quality 0.7 적용)
-const compressImage = (file) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const maxWidth = 800;
-        const maxHeight = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // 용량을 약 90% 이상 절감하는 JPEG 포맷으로 압축
-        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
-        resolve(compressedBase64);
-      };
-    };
-  });
-};
+import React, { useState, useEffect } from "react";
 
 function RoomDetail({
   room,
@@ -49,32 +8,195 @@ function RoomDetail({
   initialPaidSuccess,
   isAdmin = true,
   onUpdateRoomImage,
+  onUpdateRoomStatus, // 🆕 객실 상태 변경 콜백 함수
   onNavigateToStructure,
 }) {
   const [isPaidSuccess, setIsPaidSuccess] = useState(
     initialPaidSuccess || false,
   );
-  const [showKakaoModal, setShowKakaoModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState("kakaopay");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [timer, setTimer] = useState(180);
 
-  const qrData = encodeURIComponent(
-    `https://kakaopay.com/pay?orderId=ORDER_${room.id}_${Date.now()}&amount=${room.price || 80000}`,
-  );
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrData}`;
+  // 💡 상태값 호환 처리 (기존 room.available 기준 하위호환)
+  const currentStatus =
+    room.status || (room.available ? "available" : "occupied");
 
-  // 🔑 이미지 업로드 시 압축 후 부모 컴포넌트에 전달
-  const handleImageChange = async (e) => {
+  // 결제수단 목록
+  const paymentMethods = [
+    { id: "card", name: "신용카드", icon: "💳", color: "#333" },
+    { id: "bank", name: "무통장 입금", icon: "🏦", color: "#333" },
+    { id: "phone", name: "휴대폰 결제", icon: "📱", color: "#333" },
+    {
+      id: "naverpay",
+      name: "네이버페이",
+      icon: "N Pay",
+      isTextLogo: true,
+      logoColor: "#03C75A",
+    },
+    {
+      id: "payco",
+      name: "페이코",
+      icon: "PAYCO",
+      isTextLogo: true,
+      logoColor: "#E61C24",
+    },
+    {
+      id: "kakaopay",
+      name: "카카오페이",
+      icon: "💬 pay",
+      isTextLogo: true,
+      logoColor: "#FFEB00",
+      textColor: "#000",
+    },
+    {
+      id: "toss",
+      name: "토스",
+      icon: "🔵 toss",
+      isTextLogo: true,
+      logoColor: "#0064FF",
+    },
+    {
+      id: "applepay",
+      name: "Apple Pay",
+      icon: "🍎Pay",
+      isTextLogo: true,
+      logoColor: "#000",
+    },
+  ];
+
+  // ⏱️ QR 제한시간 타이머
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
+  useEffect(() => {
+    let interval = null;
+    if (showQrModal && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      alert("결제 시간이 초과되었습니다. 다시 시도해주세요.");
+      setShowQrModal(false);
+    }
+    return () => clearInterval(interval);
+  }, [showQrModal, timer]);
+
+  // 🛠️ 관리자: 객실 상태 변경 처리
+  const handleStatusChange = (e) => {
+    const newStatus = e.target.value;
+    if (typeof onUpdateRoomStatus === "function") {
+      onUpdateRoomStatus(room.id, newStatus);
+    }
+  };
+
+  // 🟢 상태별 뱃지 스타일 & 라벨 정의
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "available":
+        return {
+          label: "이용 가능",
+          bg: "#e8f5e9",
+          color: "#2e7d32",
+          border: "#a5d6a7",
+        };
+      case "reserved":
+        return {
+          label: "예약 중",
+          bg: "#fff3e0",
+          color: "#ed6c02",
+          border: "#ffe0b2",
+        };
+      case "occupied":
+        return {
+          label: "이용 중",
+          bg: "#ffebee",
+          color: "#d32f2f",
+          border: "#ffcdd2",
+        };
+      default:
+        return {
+          label: "이용 가능",
+          bg: "#e8f5e9",
+          color: "#2e7d32",
+          border: "#a5d6a7",
+        };
+    }
+  };
+
+  const statusStyle = getStatusBadge(currentStatus);
+
+  // 결제 관련 동작
+  const handleOpenPaymentFlow = () => setShowPaymentModal(true);
+
+  const handleStartQrPayment = () => {
+    setShowPaymentModal(false);
+    setTimer(180);
+    setShowQrModal(true);
+  };
+
+  const handleCompletePayment = () => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      setIsProcessing(false);
+      setShowQrModal(false);
+
+      if (typeof onPaymentSuccess === "function") {
+        onPaymentSuccess(room.id);
+      }
+      setIsPaidSuccess(true);
+    }, 1000);
+  };
+
+  // 🖼️ [수정됨] 이미지 자동 리사이징 및 압축 후 저장 (LocalStorage 용량 초과 방지)
+  const handleImageChange = (e) => {
     if (!isAdmin) return;
     const file = e.target.files[0];
     if (file) {
-      try {
-        const compressedDataUrl = await compressImage(file);
-        if (typeof onUpdateRoomImage === "function") {
-          onUpdateRoomImage(room.id, compressedDataUrl);
-        }
-      } catch (error) {
-        alert("이미지 처리 중 오류가 발생했습니다.");
-      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // Canvas를 이용해 이미지를 최대 너비/높이 800px로 압축 리사이징
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 0.7 품질의 JPEG로 변환하여 용량을 획기적으로 줄임
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+
+          if (typeof onUpdateRoomImage === "function") {
+            onUpdateRoomImage(room.id, compressedBase64);
+          }
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -84,31 +206,12 @@ function RoomDetail({
     }
   };
 
-  const handleOpenKakaoPay = () => {
-    setShowKakaoModal(true);
-  };
-
-  const handleCompleteKakaoPayment = () => {
-    setIsProcessing(true);
-
-    setTimeout(() => {
-      setIsProcessing(false);
-      setShowKakaoModal(false);
-
-      if (typeof onPaymentSuccess === "function") {
-        onPaymentSuccess(room.id);
-      }
-
-      setIsPaidSuccess(true);
-    }, 1200);
-  };
-
   const handleBack = (e) => {
     if (e && e.preventDefault) e.preventDefault();
-    if (typeof onBack === "function") {
-      onBack();
-    }
+    if (typeof onBack === "function") onBack();
   };
+
+  const currentMethodObj = paymentMethods.find((m) => m.id === selectedMethod);
 
   return (
     <div className="screen room-detail-screen">
@@ -156,17 +259,7 @@ function RoomDetail({
             <p
               style={{ fontSize: "18px", color: "#333", marginBottom: "20px" }}
             >
-              <strong>{room.id}호</strong> 객실 카카오페이 결제가 정상
-              완료되었습니다.
-            </p>
-            <p
-              style={{
-                color: "#d32f2f",
-                fontSize: "14px",
-                marginBottom: "30px",
-              }}
-            >
-              * 해당 객실 상태가 <strong>'이용중'</strong>으로 변경됩니다.
+              <strong>{room.id}호</strong> 객실 결제가 정상 완료되었습니다.
             </p>
             <button
               onClick={handleBack}
@@ -188,16 +281,7 @@ function RoomDetail({
           <div className="detail-main">
             <div className="detail-left">
               <div className="photo-container-main">
-                <h3>
-                  객실 대표 사진{" "}
-                  <span style={{ fontSize: "13px", color: "#666" }}>
-                    (
-                    {isAdmin
-                      ? "클릭 시 세부 구조 편집"
-                      : "클릭 시 세부 구조 보기"}
-                    )
-                  </span>
-                </h3>
+                <h3>객실 대표 사진</h3>
                 <div
                   className="room-photo-main"
                   style={{
@@ -224,7 +308,6 @@ function RoomDetail({
                         objectFit: "cover",
                         cursor: "pointer",
                       }}
-                      title="클릭하여 객실 세부 공간 구조 페이지로 이동"
                     />
                   ) : (
                     <div
@@ -234,24 +317,7 @@ function RoomDetail({
                         padding: "20px",
                       }}
                     >
-                      <p
-                        style={{
-                          fontSize: "16px",
-                          fontWeight: "bold",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        등록된 대표 사진이 없습니다.
-                      </p>
-                      {isAdmin ? (
-                        <p style={{ fontSize: "13px", color: "#d32f2f" }}>
-                          아래 파일 선택 버튼으로 관리자 전용 사진을 등록하세요.
-                        </p>
-                      ) : (
-                        <p style={{ fontSize: "13px", color: "#999" }}>
-                          관리자가 사진을 등록할 때까지 대기해주세요.
-                        </p>
-                      )}
+                      등록된 대표 사진이 없습니다.
                     </div>
                   )}
                 </div>
@@ -272,10 +338,9 @@ function RoomDetail({
                         fontSize: "13px",
                         fontWeight: "bold",
                         marginBottom: "6px",
-                        color: "#333",
                       }}
                     >
-                      📷 [관리자 전용] 대표 사진 파일 선택/변경:
+                      📷 [관리자 전용] 대표 사진 변경:
                     </label>
                     <input
                       type="file"
@@ -292,12 +357,50 @@ function RoomDetail({
               <div className="info-group large-info">
                 <div className="room-header">
                   <h3 className="room-number-large">{room.id}호</h3>
+
+                  {/* 🟢 객실 상태 뱃지 및 관리자 제어 셀렉터 */}
                   <div
-                    className={`status ${
-                      room.available ? "available" : "unavailable"
-                    }`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
                   >
-                    {room.available ? "이용 가능" : "이용중"}
+                    <span
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "20px",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        backgroundColor: statusStyle.bg,
+                        color: statusStyle.color,
+                        border: `1px solid ${statusStyle.border}`,
+                      }}
+                    >
+                      {statusStyle.label}
+                    </span>
+
+                    {/* ⚙️ 관리자 전용 상태 조절 선택창 */}
+                    {isAdmin && (
+                      <select
+                        value={currentStatus}
+                        onChange={handleStatusChange}
+                        style={{
+                          padding: "6px 10px",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          fontWeight: "bold",
+                          border: "1px solid #2b5c6b",
+                          backgroundColor: "#f4f9fa",
+                          color: "#2b5c6b",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <option value="available">🟢 이용 가능</option>
+                        <option value="reserved">🟠 예약 중</option>
+                        <option value="occupied">🔴 이용 중</option>
+                      </select>
+                    )}
                   </div>
                 </div>
               </div>
@@ -306,7 +409,7 @@ function RoomDetail({
                 <label>가격</label>
                 <div className="room-price-large">
                   ₩{room.price ? room.price.toLocaleString() : "0"}
-                  <span className="price-unit"> / Night</span>
+                  <span className="price-unit"> </span>
                 </div>
               </div>
 
@@ -315,45 +418,33 @@ function RoomDetail({
                 <p className="description">{room.description}</p>
               </div>
 
-              <div style={{ marginBottom: "20px" }}>
+              <div className="detail-buttons" style={{ marginTop: "30px" }}>
                 <button
-                  onClick={handleImageClick}
+                  onClick={handleOpenPaymentFlow}
+                  disabled={currentStatus !== "available"}
                   style={{
                     width: "100%",
-                    padding: "14px",
-                    backgroundColor: "#2b5c6b",
+                    backgroundColor:
+                      currentStatus === "available" ? "#2b5c6b" : "#ccc",
                     color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "15px",
-                    fontWeight: "bold",
-                    cursor: "pointer",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  }}
-                >
-                  🏛️ 객실 세부 공간 및 구조{" "}
-                  {isAdmin ? "편집/등록하기" : "상세보기"}
-                </button>
-              </div>
-
-              <div className="detail-buttons">
-                <button
-                  className="btn-continue"
-                  onClick={handleOpenKakaoPay}
-                  disabled={!room.available}
-                  style={{
-                    backgroundColor: "#FEE500",
-                    color: "#191919",
                     fontWeight: "bold",
                     fontSize: "16px",
                     border: "none",
-                    borderRadius: "8px",
-                    padding: "16px 24px",
-                    cursor: room.available ? "pointer" : "not-allowed",
-                    boxShadow: "0 4px 12px rgba(254, 229, 0, 0.4)",
+                    borderRadius: "10px",
+                    padding: "18px",
+                    cursor:
+                      currentStatus === "available" ? "pointer" : "not-allowed",
+                    boxShadow:
+                      currentStatus === "available"
+                        ? "0 4px 12px rgba(43, 92, 107, 0.3)"
+                        : "none",
                   }}
                 >
-                  결제하기
+                  {currentStatus === "available"
+                    ? "💳 예약 및 결제하기"
+                    : currentStatus === "reserved"
+                      ? "⏳ 현재 예약 중인 객실입니다"
+                      : "🔒 현재 이용 중인 객실입니다"}
                 </button>
               </div>
             </div>
@@ -361,7 +452,8 @@ function RoomDetail({
         )}
       </div>
 
-      {showKakaoModal && (
+      {/* 💳 1단계: 결제수단 선택 모달 */}
+      {showPaymentModal && (
         <div
           style={{
             position: "fixed",
@@ -369,21 +461,22 @@ function RoomDetail({
             left: 0,
             width: "100vw",
             height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            zIndex: 9999,
+            zIndex: 10000,
           }}
         >
           <div
             style={{
-              width: "360px",
+              width: "440px",
+              maxHeight: "90vh",
               backgroundColor: "#fff",
               borderRadius: "20px",
-              padding: "24px",
-              boxShadow: "0 16px 32px rgba(0,0,0,0.3)",
-              textAlign: "center",
+              padding: "24px 20px",
+              boxShadow: "0 16px 32px rgba(0,0,0,0.25)",
+              overflowY: "auto",
             }}
           >
             <div
@@ -392,37 +485,20 @@ function RoomDetail({
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "16px",
-                borderBottom: "2px solid #FEE500",
-                paddingBottom: "12px",
               }}
             >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "20px",
+                  fontWeight: "bold",
+                  color: "#111",
+                }}
               >
-                <span
-                  style={{
-                    backgroundColor: "#FEE500",
-                    color: "#000",
-                    fontWeight: "900",
-                    padding: "4px 8px",
-                    borderRadius: "6px",
-                    fontSize: "14px",
-                  }}
-                >
-                  pay
-                </span>
-                <span
-                  style={{
-                    fontWeight: "bold",
-                    fontSize: "16px",
-                    color: "#222",
-                  }}
-                >
-                  카카오페이 결제
-                </span>
-              </div>
+                결제수단 선택
+              </h3>
               <button
-                onClick={() => setShowKakaoModal(false)}
+                onClick={() => setShowPaymentModal(false)}
                 style={{
                   background: "none",
                   border: "none",
@@ -437,71 +513,250 @@ function RoomDetail({
 
             <div
               style={{
-                backgroundColor: "#f7f7f7",
+                backgroundColor: "#e8f3ff",
                 borderRadius: "12px",
-                padding: "14px",
+                padding: "12px 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
                 marginBottom: "20px",
-                textAlign: "left",
+                border: "1px solid #d0e4ff",
               }}
             >
-              <div style={{ fontSize: "13px", color: "#666" }}>
-                상품명: M-TEL {room.id}호 예약
-              </div>
               <div
                 style={{
-                  fontSize: "22px",
+                  width: "38px",
+                  height: "38px",
+                  backgroundColor: "#0066ff",
+                  color: "#fff",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   fontWeight: "bold",
-                  color: "#111",
-                  marginTop: "4px",
+                  fontSize: "14px",
                 }}
               >
-                ₩{room.price ? room.price.toLocaleString() : "80,000"}
+                5%
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: "bold",
+                    color: "#111",
+                  }}
+                >
+                  간편결제 진행 안내
+                </div>
+                <div style={{ fontSize: "11px", color: "#555" }}>
+                  결제 버튼 선택 후 QR 스캔을 통해 안전하게 결제됩니다.
+                </div>
               </div>
             </div>
 
             <div
               style={{
-                backgroundColor: "#fff",
-                border: "2px solid #eee",
-                borderRadius: "16px",
-                padding: "16px",
-                display: "inline-block",
-                marginBottom: "16px",
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "10px",
+                marginBottom: "24px",
               }}
             >
-              <img
-                src={qrCodeUrl}
-                alt="KakaoPay QR Code"
-                style={{ width: "180px", height: "180px", display: "block" }}
-              />
-            </div>
+              {paymentMethods.map((item) => {
+                const isSelected = selectedMethod === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedMethod(item.id)}
+                    style={{
+                      height: "85px",
+                      backgroundColor: "#fff",
+                      border: isSelected
+                        ? "2px solid #2b5c6b"
+                        : "1px solid #e0e0e0",
+                      borderRadius: "12px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                      cursor: "pointer",
+                      boxShadow: isSelected
+                        ? "0 4px 10px rgba(43, 92, 107, 0.15)"
+                        : "none",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {item.isTextLogo ? (
+                      <span
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: "900",
+                          color: item.logoColor || "#333",
+                        }}
+                      >
+                        {item.icon}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: "22px" }}>{item.icon}</span>
+                    )}
 
-            <div
-              style={{ fontSize: "13px", color: "#555", marginBottom: "20px" }}
-            >
-              카카오톡 카메라/QR스캐너로 스캔 후<br />
-              <strong>[결제 완료하기]</strong>를 눌러주세요.
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: isSelected ? "bold" : "500",
+                        color: isSelected ? "#2b5c6b" : "#444",
+                      }}
+                    >
+                      {item.name}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             <button
-              onClick={handleCompleteKakaoPayment}
-              disabled={isProcessing}
+              onClick={handleStartQrPayment}
               style={{
                 width: "100%",
                 padding: "16px",
-                backgroundColor: "#FEE500",
-                color: "#191919",
+                backgroundColor: "#2b5c6b",
+                color: "#fff",
                 border: "none",
                 borderRadius: "12px",
                 fontSize: "16px",
                 fontWeight: "bold",
                 cursor: "pointer",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+              }}
+            >
+              {currentMethodObj?.name}(으)로 ₩
+              {(room.price || 80000).toLocaleString()} 결제하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 📱 2단계: QR 코드 스캔 모달 */}
+      {showQrModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 10001,
+          }}
+        >
+          <div
+            style={{
+              width: "380px",
+              backgroundColor: "#fff",
+              borderRadius: "20px",
+              padding: "28px 24px",
+              textAlign: "center",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => setShowQrModal(false)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "20px",
+                background: "none",
+                border: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+                color: "#888",
+              }}
+            >
+              ✕
+            </button>
+
+            <div
+              style={{
+                display: "inline-block",
+                padding: "8px 16px",
+                borderRadius: "20px",
+                backgroundColor: "#f5f5f5",
+                fontSize: "15px",
+                fontWeight: "bold",
+                marginBottom: "12px",
+                color: currentMethodObj?.logoColor || "#2b5c6b",
+              }}
+            >
+              {currentMethodObj?.name} 결제
+            </div>
+
+            <h3 style={{ margin: "0 0 6px 0", fontSize: "20px" }}>
+              ₩{(room.price || 80000).toLocaleString()}
+            </h3>
+            <p
+              style={{ fontSize: "13px", color: "#666", marginBottom: "20px" }}
+            >
+              스마트폰 카메라 또는 앱으로 QR코드를 스캔하세요.
+            </p>
+
+            <div
+              style={{
+                width: "200px",
+                height: "200px",
+                margin: "0 auto 16px auto",
+                padding: "12px",
+                border: "2px solid #e0e0e0",
+                borderRadius: "16px",
+                backgroundColor: "#fff",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              }}
+            >
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=PAYMENT_ROOM_${room.id}_${selectedMethod}`}
+                alt="결제 QR코드"
+                style={{ width: "100%", height: "100%", borderRadius: "8px" }}
+              />
+            </div>
+
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#d32f2f",
+                fontWeight: "bold",
+                marginBottom: "20px",
+              }}
+            >
+              ⏱️ 결제 남은시간: {formatTime(timer)}
+            </p>
+
+            <button
+              onClick={handleCompletePayment}
+              disabled={isProcessing}
+              style={{
+                width: "100%",
+                padding: "16px",
+                backgroundColor: "#2b5c6b",
+                color: "#fff",
+                border: "none",
+                borderRadius: "12px",
+                fontSize: "15px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(43, 92, 107, 0.3)",
               }}
             >
               {isProcessing
-                ? "카카오톡 결제 승인 중..."
-                : "카카오페이 결제 완료하기"}
+                ? "결제 승인 확인 중..."
+                : "📲 모바일에서 결제 완료했습니다"}
             </button>
           </div>
         </div>
